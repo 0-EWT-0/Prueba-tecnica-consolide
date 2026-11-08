@@ -1,4 +1,6 @@
+using Microsoft.EntityFrameworkCore;
 using Prueba_tecnica_consolide.Components;
+using API.Config;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -6,7 +8,15 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+builder.Services.AddDbContextFactory<AppContextDB>(options => options.UseSqlServer(connectionString));
+
+
 var app = builder.Build();
+
+
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
