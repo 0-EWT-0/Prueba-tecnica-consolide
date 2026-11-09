@@ -21,7 +21,7 @@ public class OperationModel
     [Required]
     public DateTime Created_at { get; set; } = DateTime.UtcNow;
 
-    [ForeignKey("id_user_id")]
+    [ForeignKey("Id_user_id")]
     public UserModel? User { get; set; }
 
 }

@@ -15,7 +15,10 @@ public class SessionModel
     [Required]
     public DateTime Created_at { get; set; } = DateTime.UtcNow;
 
-    [ForeignKey("id_user_id")]
+    [Required]
+    public int Id_user_id { get; set; }
+
+    [ForeignKey("Id_user_id")]
     public UserModel? User { get; set; }
 
 }

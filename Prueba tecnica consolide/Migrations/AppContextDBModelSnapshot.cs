@@ -33,6 +33,9 @@ namespace Pruebatecnicaconsolide.Migrations
                     b.Property<DateTime>("Created_at")
                         .HasColumnType("datetime2");
 
+                    b.Property<int?>("Id_user_id")
+                        .HasColumnType("int");
+
                     b.Property<int>("Money_exchange")
                         .HasColumnType("int");
 
@@ -42,12 +45,9 @@ namespace Pruebatecnicaconsolide.Migrations
                     b.Property<int>("Total_amount")
                         .HasColumnType("int");
 
-                    b.Property<int?>("id_user_id")
-                        .HasColumnType("int");
-
                     b.HasKey("Id_operation");
 
-                    b.HasIndex("id_user_id");
+                    b.HasIndex("Id_user_id");
 
                     b.ToTable("Operation");
                 });
@@ -63,16 +63,16 @@ namespace Pruebatecnicaconsolide.Migrations
                     b.Property<DateTime>("Created_at")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("Id_user_id")
+                        .HasColumnType("int");
+
                     b.Property<string>("Session_token")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("id_user_id")
-                        .HasColumnType("int");
-
                     b.HasKey("Id_session");
 
-                    b.HasIndex("id_user_id");
+                    b.HasIndex("Id_user_id");
 
                     b.ToTable("Session");
                 });
@@ -111,7 +111,7 @@ namespace Pruebatecnicaconsolide.Migrations
                 {
                     b.HasOne("API.Models.UserModel", "User")
                         .WithMany()
-                        .HasForeignKey("id_user_id");
+                        .HasForeignKey("Id_user_id");
 
                     b.Navigation("User");
                 });
@@ -120,7 +120,9 @@ namespace Pruebatecnicaconsolide.Migrations
                 {
                     b.HasOne("API.Models.UserModel", "User")
                         .WithMany()
-                        .HasForeignKey("id_user_id");
+                        .HasForeignKey("Id_user_id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });
