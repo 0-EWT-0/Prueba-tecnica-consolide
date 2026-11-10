@@ -1,6 +1,26 @@
-﻿<Router AppAssembly="typeof(Program).Assembly">
+﻿@inject API.AuthState AuthState
+@inject NavigationManager Navigation
+
+<Router AppAssembly="typeof(Program).Assembly" OnNavigateAsync="ValidateAccess">
     <Found Context="routeData">
         <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
         <FocusOnNavigate RouteData="routeData" Selector="h1" />
     </Found>
 </Router>
+
+@code {
+    private Task ValidateAccess(NavigationContext navigationContext)
+    {
+        var route = navigationContext.Path;
+
+        bool isPublic = route == "" || route == "auth";
+        bool hasToken = !string.IsNullOrWhiteSpace(AuthState.Token);
+
+        if (!isPublic && !hasToken)
+        {
+            Navigation.NavigateTo("/auth");
+        }
+
+        return Task.CompletedTask;
+    }
+}

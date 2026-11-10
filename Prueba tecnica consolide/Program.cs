@@ -25,6 +25,9 @@ builder.Services.AddControllers();
 builder.Services.AddScoped<IAuth, AuthService>();
 builder.Services.AddScoped<IOperation, OperationService>();
 
+builder.Services.AddScoped<API.AuthState>();
+
+
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -44,9 +47,9 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+builder.Services.AddHttpClient();
 
 var app = builder.Build();
-
 
 
 // Configure the HTTP request pipeline.
@@ -57,7 +60,10 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseStaticFiles();
 app.UseAntiforgery();

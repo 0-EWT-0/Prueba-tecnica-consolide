@@ -1,0 +1,152 @@
+﻿@page "/auth"
+@rendermode InteractiveServer
+@using API.Interfaces;
+@using System.Net.Http.Headers;
+@inject System.Net.Http.IHttpClientFactory HttpClientFactory
+@inject NavigationManager Navigation
+@inject API.AuthState AuthState
+
+<PageTitle>Auth</PageTitle>
+
+<h1>Authentication</h1>
+
+@if (isLogin == true)
+{
+    <h2>Login</h2>
+
+    @switch (loginResult?.Code)
+    {
+        case 200:
+            <h3 style="color:green">Inicio de sesion exitoso</h3>
+            @* <b>@loginResult?.Token</b> *@
+            break;
+        case 401:
+            <h3 style="color:orange">Credenciales invalidas</h3>
+            break;
+        case 404:
+            <h3 style="color:orange">Usuario no encontrado, cambiar a registro?</h3>
+            <a style="cursor: pointer;" @onclick="() => isLogin = false">Cambiar a registor</a>
+            break;
+        case 500:
+            <h3 style="color:red">Ocurrio un error al inicar sesion</h3>
+            <b>@loginResult?.Message</b>
+            break;
+    }
+
+    <form @onsubmit="Login">
+        <input type="email" @bind="email" placeholder="Correo" required />
+        <input type="password" @bind="password" placeholder="Contrasena" required />
+
+        <button type="submit">Inciar sesion</button>
+    </form>
+
+    <a style="cursor: pointer;" @onclick="() => isLogin = false">Cambiar a registro</a>
+}
+else
+{
+    <h2>Register</h2>
+
+    @switch (registerResult?.Code)
+    {
+        case 201:
+            <h3 style="color:green">Su cuenta fue creada Inicie sesion</h3>
+            <a style="cursor: pointer;" @onclick="() => isLogin = true">Cambiar a inicio de sesion</a>
+            break;
+        case 409:
+            <h3 style="color:orange">El correo electronico ya se encuentra registrado, cambiar a inicar sesion?</h3>
+            <a style="cursor: pointer;" @onclick="() => isLogin = true">Cambiar a inicar sesion</a>
+            break;
+        case 500:
+            <h3 style="color:red">Ocurrio un error al inicar sesion</h3>
+            <b>@loginResult?.Message</b>
+            break;
+    }
+
+    <form @onsubmit="Register">
+        <input type="text" @bind="name" placeholder="Nombre" required />
+        <input type="email" @bind="email" placeholder="Correo" required />
+        <input type="password" @bind="password" placeholder="Contrasena" required />
+
+        <button type="submit">Crear cuenta</button>
+    </form>
+
+    <a style="cursor: pointer;" @onclick="() => isLogin = true">Cambiar a login</a>
+}
+
+@code {
+
+    bool isLogin = false;
+
+    private string apiUrl = "http://localhost:8080/api/Auth";
+
+    private string name = "";
+    private string email = "";
+    private string password = "";
+
+    private LoginResponse? loginResult;
+    private RegistationResponse? registerResult;
+    private LogoutResponse? logoutResult;
+
+    private async Task Login()
+    {
+        var http = HttpClientFactory.CreateClient();
+
+        var loginDTO = new LoginDTO(email, password);
+
+        using var response = await http.PostAsJsonAsync(
+            $"{apiUrl}/login", loginDTO
+        );
+
+        loginResult = await response.Content.ReadFromJsonAsync<LoginResponse>();
+
+
+        if (loginResult?.Flag == true)
+        {
+            // aca se alamcena el token
+            AuthState.Token = loginResult?.Token;
+            Navigation.NavigateTo("/operations");
+        }
+    }
+
+    private async Task Register()
+    {
+        var http = HttpClientFactory.CreateClient();
+
+        var registerDTO = new RegisterDTO(name, email, password);
+
+        using var response = await http.PostAsJsonAsync(
+            $"{apiUrl}/register", registerDTO
+        );
+
+        registerResult = await response.Content.ReadFromJsonAsync<RegistationResponse>();
+
+        if (registerResult?.Flag == true && registerResult?.Code == 201)
+        {
+            // aca se llamaria el login nuevamente
+        }
+    }
+
+    // public async Task Logout()
+    // {
+    //     var http = HttpClientFactory.CreateClient();
+
+    //     Coloca el topken en ;la cabecera
+    //     http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", AuthState.Token);
+
+    //     using var response = await http.PostAsync(
+    //         $"{apiUrl}/logout", null
+    //     );
+
+    //     logoutResult = await response.Content.ReadFromJsonAsync<LogoutResponse>();
+
+    //     if (logoutResult?.Flag == true && logoutResult?.Code == 200)
+    //     {
+    //         AuthState.Token = null;
+    //         loginResult = null;
+
+    //         Navigation.NavigateTo("/operations");
+    //     }
+
+    // }
+
+}
