@@ -33,7 +33,7 @@ namespace Pruebatecnicaconsolide.Migrations
                     b.Property<DateTime>("Created_at")
                         .HasColumnType("datetime2");
 
-                    b.Property<int?>("Id_user_id")
+                    b.Property<int>("Id_user_id")
                         .HasColumnType("int");
 
                     b.Property<int>("Money_exchange")
@@ -111,7 +111,9 @@ namespace Pruebatecnicaconsolide.Migrations
                 {
                     b.HasOne("API.Models.UserModel", "User")
                         .WithMany()
-                        .HasForeignKey("Id_user_id");
+                        .HasForeignKey("Id_user_id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });

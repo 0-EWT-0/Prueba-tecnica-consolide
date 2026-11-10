@@ -7,6 +7,8 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using API.Interfaces;
+using Microsoft.AspNetCore.Mvc;
+using System.Text.RegularExpressions;
 namespace API.Services;
 
 
@@ -95,16 +97,20 @@ public class AuthService: IAuth
         {
             var exists = await _context.Users.AnyAsync(u => u.Email == registerDTO.Email);
 
-            if (exists)
+            if (exists == true)
             {
                 return new RegistationResponse(false, 409, "User already exists");
             }
 
+            string cleanName = registerDTO.Name.Trim();
+            string validEmail = Regex.Replace(registerDTO.Email.Trim(), @"\s+", "");
+            string validPasswordHash = BCrypt.Net.BCrypt.HashPassword(registerDTO.Password);
+
             var newUser = new UserModel()
             {
-                Name = registerDTO.Name.Trim(),
-                Email = registerDTO.Email.Trim(),
-                Password_hash = BCrypt.Net.BCrypt.HashPassword(registerDTO.Password),
+                Name = cleanName,
+                Email = validEmail,
+                Password_hash = validPasswordHash,
                 Created_at = DateTime.Now,
             };
 
@@ -124,7 +130,7 @@ public class AuthService: IAuth
         {
             var existingSession = await _context.Session.Where(s => s.Id_user_id == logoutDTO.UserId).ToListAsync();
 
-            if (!existingSession.Any())
+            if (existingSession.Count == 0)
             {
                 return new LogoutResponse(false, 404, "Session not found");
             }

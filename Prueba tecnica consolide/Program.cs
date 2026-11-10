@@ -23,6 +23,7 @@ builder.Services.AddControllers();
 
 
 builder.Services.AddScoped<IAuth, AuthService>();
+builder.Services.AddScoped<IOperation, OperationService>();
 
 builder.Services.AddAuthentication(options =>
 {
