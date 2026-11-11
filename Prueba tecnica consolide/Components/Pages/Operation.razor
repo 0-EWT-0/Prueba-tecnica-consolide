@@ -67,6 +67,7 @@
                     <td>@((operation.Total_amount / 100m).ToString("F2"))</td>
                     <td>@((operation.Money_paid / 100m).ToString("F2"))</td>
                     <td>@((operation.Money_exchange / 100m).ToString("F2"))</td>
+                    <td>@DescribeChange(operation.Money_exchange)</td>
                 </tr>
             }
         </tbody>
@@ -176,5 +177,47 @@
             await response.Content.ReadFromJsonAsync<GetAllOperationHistoryResponse>();
 
         
+    }
+
+
+    private string DescribeChange(int changeInCents)
+    {
+        if (changeInCents == 0)
+        {
+            return "Cambviop exacto";
+        }
+
+        (int ValueInCents, string Label)[] denominations =
+        {
+        (50000, "$500 (billete)"),
+        (20000, "$200 (billete)"),
+        (10000, "$100 (billete)"),
+        (5000, "$50 (billete)"),
+        (2000, "$20 (billete)"),
+        (1000, "$10 (moneda)"),
+        (500, "$5 (moneda)"),
+        (100, "$1 (moneda)"),
+        (50, "$0.50 (moneda)"),
+        (20, "$0.20 (moneda)"),
+        (10, "$0.10 (moneda)")
+    };
+
+        int remainingChange = changeInCents;
+        var breakdown = new List<string>();
+
+        foreach (var denomination in denominations)
+        {
+            int pieceCount = remainingChange / denomination.ValueInCents;
+
+            if (pieceCount > 0)
+            {
+                breakdown.Add($"{pieceCount} x {denomination.Label}");
+
+                int coveredAmount = pieceCount * denomination.ValueInCents;
+                remainingChange -= coveredAmount;
+            }
+        }
+
+        return string.Join(", ", breakdown);
     }
 }
