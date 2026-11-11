@@ -1,12 +1,180 @@
 ﻿@page "/operations"
 @rendermode InteractiveServer
+@using API.Interfaces;
+@using System.Net.Http.Headers
+@inject System.Net.Http.IHttpClientFactory HttpClientFactory
+@inject NavigationManager Navigation
+@inject API.AuthState AuthState
 
 <PageTitle>Operation main page</PageTitle>
 
-<h3>Operation</h3>
+<h2>Cambio total: @exchange</h2>
 
-<R
+@switch (createOperationResult?.Code)
+{
+    case 201:
+        <b style="color:green">Operacion creada y guardada</b>
+        break;
+    case 400:
+        <b style="color:orange">Datos invalidos: @createOperationResult.Message</b>
+        break;
+    case 500:
+        <b style="color:red">Ocurrio un error al inicar sesion :@createOperationResult.Message</b>
+        break;
+}
+
+<form @onsubmit="CreateOperation">
+
+    <div class="d-grid gap-3">
+        <label class="fw-bold">
+            Monto a pagar
+            <div class="d-grid gap-2">
+                <input class="d-block" type="text" inputmode="numeric" pattern="[0-9]+" @bind="whole_total_amount" placeholder="Monto a pagar" required />
+                <input type="text" inputmode="numeric" minlength="2" , maxlength="2" pattern="[0-9]{2}" @bind="decimal_total_amount" placeholder="Monto a pagar decimal" required />
+            </div>
+        </label>
+        <label class="fw-bold">
+            Dinero recibido
+            <div class="d-grid gap-2">
+                <input class="d-block" type="text" inputmode="numeric" pattern="[0-9]+" @bind="whole_money_paid" placeholder="Dinero recibido" required />
+                <input type="text" inputmode="numeric" minlength="2" , maxlength="2" pattern="[0-9]{2}" @bind="decimal_money_paid" placeholder="Monto recibido decimal" required />
+            </div>
+        </label>
+    </div>
+
+    <button class="btn btn-primary mt-4" type="submit">Crear y guardar operacion</button>
+</form>
+
+<button class="btn btn-outline-primary mt-2" @onclick="GetAllOperationHistory">Cargar historial</button>
+
+@if (getAllHistoryResult is { Code: 200, Flag: true, Model: { } operations })
+{
+    <table class="table mt-2">
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Monto a pagar</th>
+                <th>Dinero recibido</th>
+                <th>Cambio total</th>
+                <th>Desglose</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var operation in operations)
+            {
+                <tr>
+                    <td>@operation.Created_at.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@((operation.Total_amount / 100m).ToString("F2"))</td>
+                    <td>@((operation.Money_paid / 100m).ToString("F2"))</td>
+                    <td>@((operation.Money_exchange / 100m).ToString("F2"))</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
 
 @code {
+    private string apiUrl = "http://localhost:8080/api/Operation";
 
+    private string whole_total_amount = string.Empty;
+    private string whole_money_paid = string.Empty;
+
+    private string decimal_total_amount = string.Empty;
+    private string decimal_money_paid = string.Empty;
+
+    private bool invalidAmounts = false;
+
+    private int totalAmount;
+    private int moneyPaid;
+
+    private string exchange = "0.00";
+
+    private int base_limit = 100;
+    private int base_offset = 0;
+
+    private record CreateOperationDTO(int total_amount, int money_paid);
+
+    private CreateOperationResponse? createOperationResult;
+    private GetAllOperationHistoryResponse? getAllHistoryResult;
+
+    private int? ValidateDecimals(string value)
+    {
+        bool onlyDigits = value.All(c => c >= '0' && c <= '9');
+
+        if (value.Length != 2 || onlyDigits == false)
+        {
+            return null;
+        }
+
+        return int.Parse(value);
+    }
+
+    private int? ValidateWhole(string value)
+    {
+        bool onlyDigits = value.All(c => c >= '0' && c <= '9');
+
+        if (value.Length < 0 && onlyDigits == false)
+        {
+            return null;
+        }
+
+        return int.Parse(value);
+    }
+
+    private async Task CreateOperation()
+    {
+        var http = HttpClientFactory.CreateClient();
+
+        http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", AuthState.Token);
+
+        invalidAmounts = false;
+
+        int? total = ValidateWhole(whole_total_amount) * 100 + ValidateDecimals(decimal_total_amount);
+
+        int? paid = ValidateWhole(whole_money_paid) * 100 + ValidateDecimals(decimal_money_paid);
+
+        if (total is not int totalAmount || paid is not int moneyPaid)
+        {
+            invalidAmounts = true;
+            return;
+        }
+        ;
+
+        var createOperationDto = new CreateOperationDTO(totalAmount, moneyPaid);
+
+        using var response = await http.PostAsJsonAsync(
+            $"{apiUrl}/create", createOperationDto
+        );
+
+        createOperationResult = await response.Content.ReadFromJsonAsync<CreateOperationResponse>();
+
+        if (createOperationResult?.Code == 201 && createOperationResult.Flag)
+        {
+            var changeInPesos = createOperationResult.exchange / 100m;
+            exchange = FormattableString.Invariant($"{changeInPesos:F2}");
+        }
+
+    }
+
+    private async Task GetAllOperationHistory()
+    {
+        var http = HttpClientFactory.CreateClient();
+
+        http.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", AuthState.Token);
+
+        var getAllOperationHistoryDTO = new GetAllOperationHistoryDTO(base_limit, base_offset);
+
+        using var request = new HttpRequestMessage(
+            HttpMethod.Get, $"{apiUrl}/getAll");
+
+        request.Content = JsonContent.Create(getAllOperationHistoryDTO);
+
+        using var response = await http.SendAsync(request);
+
+        getAllHistoryResult =
+            await response.Content.ReadFromJsonAsync<GetAllOperationHistoryResponse>();
+
+        
+    }
 }
