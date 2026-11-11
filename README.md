@@ -32,4 +32,6 @@ Y luego (la bd debe estar creada levantada):
 
 	Update-Database
 
+## Paso 6 | Correr el proyecto -> Container(Dockerfile)
+
 
